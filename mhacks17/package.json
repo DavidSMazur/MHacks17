@@ -20,10 +20,14 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.446.0",
     "next": "14.2.13",
+    "openai": "^4.65.0",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^4.6.82",
     "react": "^18",
     "react-dom": "^18",
     "react-markdown": "^9.0.1",
     "react-speech-recognition": "^3.10.0",
+    "react-to-pdf": "^1.0.1",
     "tailwind-merge": "^2.5.2"
   },
   "devDependencies": {

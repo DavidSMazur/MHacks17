@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Upload, Mic, PauseCircle, StopCircle, X, Download } from "lucide-react"
+import { Upload, Mic, StopCircle, X, Download } from "lucide-react"
 import { Card, CardBody, Button } from "@nextui-org/react"
 import type { StartAvatarResponse } from "@heygen/streaming-avatar"
 import StreamingAvatar, {
@@ -10,7 +10,7 @@ import StreamingAvatar, {
   TaskType,
 } from "@heygen/streaming-avatar"
 import ReactMarkdown from 'react-markdown'
-import { usePDF } from 'react-to-pdf';
+import ReactToPdf, { usePDF } from 'react-to-pdf';
 import { json } from 'stream/consumers'
 
 interface Message {
@@ -85,8 +85,6 @@ export default function AILawyer() {
   const [isUserTalking, setIsUserTalking] = useState(false)
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [caseContent, setCaseContent] = useState('');
-
-  const [transcript, setTranscript] = useState('')
 
   const CARTESIA_API_KEY = process.env.CARTESIA_API_KEY;
 
@@ -172,25 +170,11 @@ export default function AILawyer() {
       })
 
       setData(res)
-      // await avatar.current?.startVoiceChat()
-      // setChatMode("voice_mode")
     } catch (error) {
       console.error("Error starting avatar session:", error)
     } finally {
       setIsLoadingSession(false)
     }
-  }
-
-  async function handleInterrupt() {
-    if (!avatar.current) {
-      setDebug("Avatar API not initialized")
-      return
-    }
-    await avatar.current
-      .interrupt()
-      .catch((e) => {
-        setDebug(e.message)
-      })
   }
 
   async function endSession() {
@@ -207,7 +191,6 @@ export default function AILawyer() {
   useEffect(() => {
     if (stream && mediaStream.current) {
       mediaStream.current.srcObject = stream
-      // mediaStream.current.muted = true;
       mediaStream.current.onloadedmetadata = () => {
         mediaStream.current!.play()
         setDebug("Playing")
@@ -238,8 +221,6 @@ export default function AILawyer() {
       setIsRecording(!isRecording)
     fetch('http://127.0.0.1:5000/api/record/start').then((response) => {
       console.log(response);
-      // const jsonData = response.json();
-      // console.log(jsonData)
     })
     }
     else{
@@ -248,8 +229,7 @@ export default function AILawyer() {
     .then(async (response) => {
       const jsonData = await response.json();
       console.log(jsonData)
-      setTranscript(jsonData.transcript)
-      return jsonData; // Ensure you return the promise from response.json()
+      return jsonData;
     })
     } 
   }
@@ -263,7 +243,7 @@ export default function AILawyer() {
           'role': "user",
           "parts": [
             {
-            "text": transcript,
+            "text": "transcript",
             }
           ]
         }
@@ -274,10 +254,9 @@ export default function AILawyer() {
       {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'  // Specify that the body is JSON
+          'Content-Type': 'application/json'
         },      
         body: JSON.stringify(payload),
-
       }
     ).then()
   }
@@ -323,25 +302,23 @@ Remember to keep all communication and documents confidential.
 
   return (
     <div className="h-screen w-screen bg-gradient-to-br from-purple-100 to-indigo-200 flex flex-col">
-      {/* Navbar */}
       <nav className="bg-white shadow-md p-2">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-12">
             <div className="flex items-center">
-              <span className="font-bold text-xl text-indigo-600">AI Lawyer Co.</span>
+              <span className="font-bold text-xl text-indigo-600">CaseCraft</span>
             </div>
           </div>
         </div>
       </nav>
   
       <main className="flex-grow flex relative overflow-hidden">
-        {/* Video Section */}
         <div className="w-3/4 h-full flex flex-col items-center justify-center relative z-10">
           <Card className="w-full h-full overflow-hidden rounded-lg shadow-2xl" style={{
             background: 'linear-gradient(45deg, #6366f1, #a855f7, #ec4899)',
-            padding: '1px', // Reduced padding to minimize the gradient border
+            padding: '1px',
           }}>
-            <CardBody className="p-0 relative bg-white rounded-lg h-full"> {/* Added h-full to ensure full height */}
+            <CardBody className="p-0 relative bg-white rounded-lg h-full">
               <video
                 ref={mediaStream}
                 autoPlay
@@ -350,33 +327,22 @@ Remember to keep all communication and documents confidential.
               >
                 <track kind="captions" />
               </video>
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
-                <Button
-                  className="bg-purple-500 hover:bg-purple-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl mb-4"
-                  size="lg"
-                  onClick={startSession}
-                >
-                  Start Session
-                </Button>
-                <div className="flex gap-4 mb-4">
-                  <Button
-                    className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
-                    size="sm"
-                    onClick={handleInterrupt}
-                  >
-                    <PauseCircle size={16} />
-                    <span>Interrupt</span>
-                  </Button>
-                  <Button
-                    className="bg-red-500 hover:bg-red-600 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
-                    size="sm"
-                    onClick={endSession}
-                  >
-                    <StopCircle size={16} />
-                    <span>End Session</span>
-                  </Button>
-                </div>
-              </div>
+              <div className="absolute bottom-4 left-4 flex flex-col items-center">
+  <Button
+    className="bg-purple-500 hover:bg-purple-600 text-white rounded-full w-12 h-12 flex items-center justify-center transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl mb-4"
+    size="sm"
+    onClick={startSession}
+  >
+    S
+  </Button>
+  <Button
+    className="bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
+    size="sm"
+    onClick={endSession}
+  >
+    E
+  </Button>
+</div>
               <div className="absolute bottom-4 right-4">
                 <Button
                   className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl"
@@ -390,7 +356,6 @@ Remember to keep all communication and documents confidential.
           </Card>
         </div>
   
-        {/* Chat Section */}
         <div className="w-1/4 flex flex-col overflow-hidden border-l border-indigo-200">
           <div className="flex-grow overflow-y-auto space-y-2 p-2 pt-4">
             {messages.map((message) => (
@@ -413,7 +378,6 @@ Remember to keep all communication and documents confidential.
         </div>
       </main>
   
-      {/* Message Input Section */}
       <div className="p-6 bg-white bg-opacity-50 backdrop-blur-md">
         <form onSubmit={handleSendMessage} className="flex items-center justify-center max-w-4xl mx-auto">
           <div className="relative mr-3">
@@ -441,13 +405,7 @@ Remember to keep all communication and documents confidential.
             onChange={(e) => setInputMessage(e.target.value)}
             className="flex-grow mr-3 border-2 border-indigo-200 rounded-full py-3 px-6 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-base"
           />
-          <button 
-            type="button" 
-            className="mr-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-3 transition-colors duration-300"
-            aria-label="Upload File"
-          >
-            <Upload size={24} />
-          </button>
+          
           <button 
             type="submit" 
             className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-full px-8 py-3 transition-colors duration-300 text-base font-semibold"
@@ -457,7 +415,6 @@ Remember to keep all communication and documents confidential.
         </form>
       </div>
   
-      {/* CasePopup component */}
       <CasePopup
         isOpen={isPopupOpen}
         onClose={() => setIsPopupOpen(false)}
