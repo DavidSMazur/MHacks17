@@ -14,6 +14,8 @@ import pyaudio
 import struct
 import json
 
+from langer import run_RAG
+
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 1 if sys.platform == 'darwin' else 2
@@ -94,46 +96,10 @@ contextList = [
 
 @app.route('/api/getBreadboard', methods=['POST'])
 def getBreadboardOutput():
-    global nextkey
-    global contextList
-    payload = {
-      '$key': "bb-1u4b1z6p616x6i2z394pn15624w2si2f3o963r16681m3114i4",
-      
-      'context': contextList[-1]
-    }
-    # if nextkey is not None:
-    #     payload['$next'] = nextkey
-    contextList.append({
-        "role": "user",
-        "parts": [
-            {
-            "text": globaltranscription,
-            }
-          ]
-    })
-    res = requests.post('https://breadboard-community.wl.r.appspot.com/boards/@AdorableBeetle/prod-board-copy.bgl.api/run', json=payload)
-    tism = res.text.split("\n\n")[0][6:]
-    print(res.text.split("\n\n"))
-    tism = '{' + tism[1:]
-    tism = tism[:9] + ':' + tism[10:]
-    tism = tism[:-1] + '}'
-    # print(tism)
-    data = json.loads(tism)
-    # print(res.json())
+    resp = run_RAG(globaltranscription)
     
-    contextList.append({
-        "role": "assistant",
-        "parts": [
-            {
-            "text": data['output']['outputs']['output'][-1]['parts'][0]['text'],
-            }
-          ]
-    })
     
-    print(contextList)
-    
-    # nextkey = res.text.split("\n\n")[1][1]
-    return {"text": data['output']['outputs']['output'][-1]['parts'][0]['text']}
+    return {"text": resp}
 
 # # Specify the path to the audio file
 # filename = os.path.dirname(__file__) + "/sample_audio.m4a" # Replace with your audio file!

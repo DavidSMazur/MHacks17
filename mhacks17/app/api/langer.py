@@ -15,6 +15,7 @@ client = Groq(api_key=os.environ['GROQ_API_KEY'])
 
 def research_tool(query: str) -> str:
     global index
+    
     q_embed = genai.embed_content(
         model="models/text-embedding-004",
         content=query,

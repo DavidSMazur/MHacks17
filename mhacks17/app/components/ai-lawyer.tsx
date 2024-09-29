@@ -283,6 +283,7 @@ export default function AILawyer() {
       })
       .then(async (response) => {
         const jsonData = await response.json()
+        console.log(jsonData)
         setcurrOut(jsonData['text'])
       })
       if(avatar.current){
