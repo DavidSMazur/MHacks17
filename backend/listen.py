@@ -1,5 +1,6 @@
 import os
 import asyncio
+from signal import SIGINT, SIGTERM
 from dotenv import load_dotenv
 from deepgram import (
     DeepgramClient,
@@ -9,93 +10,112 @@ from deepgram import (
     Microphone,
 )
 
-# Load the API key from the .env file
 load_dotenv()
+
 deepgram_api_key = os.getenv("DEEPGRAM_API_KEY")
 
 if not deepgram_api_key:
     raise Exception("Deepgram API key is missing!")
 
-class TranscriptCollector:
-    def __init__(self):
-        self.reset()
+is_finals = []
+stop_streaming = False
+transcription_queue = asyncio.Queue()
 
-    def reset(self):
-        self.transcript_parts = []
-
-    def add_part(self, part):
-        self.transcript_parts.append(part)
-
-    def get_full_transcript(self):
-        return ' '.join(self.transcript_parts)
-
-transcript_collector = TranscriptCollector()
+async def stop_stream():
+    global stop_streaming
+    stop_streaming = True
 
 async def STT():
+    global is_finals, stop_streaming
     try:
-        # Configure the client options
+        loop = asyncio.get_running_loop()
+
         config = DeepgramClientOptions(options={"keepalive": "true"})
         deepgram: DeepgramClient = DeepgramClient(deepgram_api_key, config)
 
-        # Connect using the asyncwebsocket method
         dg_connection = deepgram.listen.asyncwebsocket.v("1")
 
-        # Event handler for receiving messages
-        async def on_message(result, **kwargs):
+        async def on_open(self, open, **kwargs):
+            print("Connection Open")
+
+        async def on_message(self, result, **kwargs):
+            global is_finals
             sentence = result.channel.alternatives[0].transcript
-
-            if not sentence:
+            if len(sentence) == 0:
                 return
-
-            if not result.speech_final:
-                transcript_collector.add_part(sentence)
+            if result.is_final:
+                is_finals.append(sentence)
+                if result.speech_final:
+                    utterance = " ".join(is_finals)
+                    print(f"Speech Final: {utterance}")
+                    await transcription_queue.put(utterance)
+                    is_finals = []
+                else:
+                    print(f"Is Final: {sentence}")
             else:
-                transcript_collector.add_part(sentence)
-                full_sentence = transcript_collector.get_full_transcript()
-                print(f"Speaker: {full_sentence}")
-                transcript_collector.reset()
+                print(f"Interim Results: {sentence}")
 
-        # Event handler for errors
-        async def on_error(error, **kwargs):
-            print(f"Error: {error}")
+        async def on_utterance_end(self, utterance_end, **kwargs):
+            global is_finals
+            if len(is_finals) > 0:
+                utterance = " ".join(is_finals)
+                print(f"Utterance End: {utterance}")
+                await transcription_queue.put(utterance)
+                is_finals = []
 
-        # Add event listeners
+        async def on_error(self, error, **kwargs):
+            print(f"Handled Error: {error}")
+
+        dg_connection.on(LiveTranscriptionEvents.Open, on_open)
         dg_connection.on(LiveTranscriptionEvents.Transcript, on_message)
+        dg_connection.on(LiveTranscriptionEvents.UtteranceEnd, on_utterance_end)
         dg_connection.on(LiveTranscriptionEvents.Error, on_error)
 
-        # Set up LiveOptions for the transcription
         options = LiveOptions(
             model="nova-2",
-            punctuate=True,
             language="en-US",
+            smart_format=True,
             encoding="linear16",
             channels=1,
             sample_rate=16000,
-            endpointing=True
+            interim_results=True,
+            utterance_end_ms="1000",
+            vad_events=True,
+            endpointing=300,
         )
 
-        # Start the WebSocket connection
-        if not await dg_connection.start(options):
-            print("Failed to connect to Deepgram WebSocket")
+        addons = {"no_delay": "true"}
+
+        print("\n\nStart talking! Use stop_stream() to stop...\n")
+        if await dg_connection.start(options, addons=addons) is False:
+            print("Failed to connect to Deepgram")
             return
 
-        # Open a microphone stream
         microphone = Microphone(dg_connection.send)
         microphone.start()
 
-        while True:
-            if not microphone.is_active():
-                break
-            await asyncio.sleep(1)
+        try:
+            while not stop_streaming:
+                try:
+                    transcription = await asyncio.wait_for(transcription_queue.get(), timeout=1.0)
+                    yield transcription
+                except asyncio.TimeoutError:
+                    pass
+        finally:
+            microphone.finish()
+            await dg_connection.finish()
 
-        # Finish the connection once done
-        microphone.finish()
-        await dg_connection.finish()
-
-        print("Finished")
+        print("Streaming finished")
 
     except Exception as e:
         print(f"Could not open socket: {e}")
 
+async def main():
+    async for transcription in STT():
+        print(f"Main received: {transcription}")
+        # Process the transcription as needed
+        if "stop" in transcription.lower():
+            await stop_stream()
+
 if __name__ == "__main__":
-    asyncio.run(STT())
+    asyncio.run(main())
