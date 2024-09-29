@@ -148,64 +148,78 @@ export default function AILawyer() {
 
   return (
     <div className="h-screen w-screen bg-gradient-to-br from-purple-100 to-indigo-200 flex flex-col">
+      {/* Navbar */}
+      <nav className="bg-white shadow-md p-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-12">
+            <div className="flex items-center">
+              <span className="font-bold text-xl text-indigo-600">AI Lawyer Co.</span>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       <main className="flex-grow flex relative overflow-hidden">
         {/* Video Section */}
-        <div className="w-3/4 h-full flex flex-col items-center justify-center relative z-10 p-4">
-          <Card className="w-full h-full overflow-hidden border-4 border-indigo-300 rounded-lg shadow-xl">
-            <CardBody className="p-0 relative">
-              <video
-                ref={mediaStream}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover object-center"
-              >
-                <track kind="captions" />
-              </video>
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
-                <Button
-                  className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl mb-4"
-                  size="lg"
-                  onClick={startSession}
-                >
-                  Start Session
-                </Button>
-                <div className="flex gap-4">
-                  <Button
-                    className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
-                    size="sm"
-                    onClick={handleInterrupt}
-                  >
-                    <PauseCircle size={16} />
-                    <span>Interrupt</span>
-                  </Button>
-                  <Button
-                    className="bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
-                    size="sm"
-                    onClick={endSession}
-                  >
-                    <StopCircle size={16} />
-                    <span>End Session</span>
-                  </Button>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
+        <div className="w-3/4 h-full flex flex-col items-center justify-center relative z-10">
+        <Card className="w-full h-full overflow-hidden rounded-lg shadow-2xl" style={{
+  background: 'linear-gradient(45deg, #6366f1, #a855f7, #ec4899)',
+  padding: '4px', // This creates the gradient border effect
+}}>
+  <CardBody className="p-0 relative bg-white rounded-lg">
+    <video
+      ref={mediaStream}
+      autoPlay
+      playsInline
+      className="w-full h-full object-cover object-center rounded-lg"
+    >
+      <track kind="captions" />
+    </video>
+    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+      <Button
+        className="bg-purple-500 hover:bg-purple-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl mb-4"
+        size="lg"
+        onClick={startSession}
+      >
+        Start Session
+      </Button>
+      <div className="flex gap-4">
+        <Button
+          className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
+          size="sm"
+          onClick={handleInterrupt}
+        >
+          <PauseCircle size={16} />
+          <span>Interrupt</span>
+        </Button>
+        <Button
+          className="bg-red-500 hover:bg-red-600 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
+          size="sm"
+          onClick={endSession}
+        >
+          <StopCircle size={16} />
+          <span>End Session</span>
+        </Button>
+      </div>
+    </div>
+  </CardBody>
+</Card>
         </div>
 
         {/* Chat Section */}
         <div className="w-1/4 flex flex-col overflow-hidden border-l border-indigo-200">
-          <div className="flex-grow overflow-y-auto space-y-2 p-2">
+          <div className="flex-grow overflow-y-auto space-y-2 p-2 pt-4">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.sender === 'ai' ? 'justify-start' : 'justify-end'}`}
               >
                 <div
-                  className={`p-2 rounded-lg max-w-[90%] text-sm ${
+                  className={`p-3 rounded-lg max-w-[90%] text-sm ${
                     message.sender === 'ai' 
-                      ? 'bg-indigo-100 text-gray-800' 
-                      : 'bg-purple-100 text-gray-800'
-                  } shadow-sm`}
+                      ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white' 
+                      : 'bg-white text-gray-800'
+                  } shadow-md`}
                 >
                   {message.text}
                 </div>
@@ -216,23 +230,23 @@ export default function AILawyer() {
       </main>
 
       {/* Message Input Section */}
-      <div className="p-4 bg-white bg-opacity-50 backdrop-blur-md">
-        <form onSubmit={handleSendMessage} className="flex items-center justify-center max-w-3xl mx-auto">
-          <div className="relative mr-2">
+      <div className="p-6 bg-white bg-opacity-50 backdrop-blur-md">
+        <form onSubmit={handleSendMessage} className="flex items-center justify-center max-w-4xl mx-auto">
+          <div className="relative mr-3">
             <button 
               type="button" 
-              className={`transition-all duration-300 ease-in-out ${isRecording ? 'w-24 bg-red-500' : 'w-8 bg-indigo-600'} h-8 rounded-full flex items-center justify-center text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+              className={`transition-all duration-300 ease-in-out ${isRecording ? 'w-32 bg-red-500' : 'w-12 bg-indigo-600'} h-12 rounded-full flex items-center justify-center text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
               onClick={toggleRecording}
               aria-label={isRecording ? "Stop recording" : "Start recording"}
             >
               {isRecording ? (
                 <div className="flex space-x-1">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="w-1 h-3 bg-white rounded-full animate-pulse" style={{animationDelay: `${i * 0.15}s`}}></div>
+                    <div key={i} className="w-2 h-4 bg-white rounded-full animate-pulse" style={{animationDelay: `${i * 0.15}s`}}></div>
                   ))}
                 </div>
               ) : (
-                <Mic size={16} />
+                <Mic size={24} />
               )}
             </button>
           </div>
@@ -241,18 +255,18 @@ export default function AILawyer() {
             placeholder="Message AI Lawyer"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            className="flex-grow mr-2 border-2 border-indigo-200 rounded-full py-2 px-4 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+            className="flex-grow mr-3 border-2 border-indigo-200 rounded-full py-3 px-6 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-base"
           />
           <button 
             type="button" 
-            className="mr-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-2 transition-colors duration-300"
+            className="mr-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-3 transition-colors duration-300"
             aria-label="Upload File"
           >
-            <Upload size={20} />
+            <Upload size={24} />
           </button>
           <button 
             type="submit" 
-            className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full px-6 py-2 transition-colors duration-300 text-sm font-semibold"
+            className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-full px-8 py-3 transition-colors duration-300 text-base font-semibold"
           >
             Send
           </button>
