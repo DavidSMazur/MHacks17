@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv() 
 
 
-def speak(transcript):
+def TTS(transcript):
     client = Cartesia(api_key=os.environ.get("CARTESIA_API_KEY"))
     voice_name = "Australian Narrator Lady"
     voice_id = "8985388c-1332-4ce7-8d55-789628aa3df4"
@@ -54,5 +54,3 @@ def speak(transcript):
     p.terminate()
 
     ws.close()  # Close the websocket connection
-
-
