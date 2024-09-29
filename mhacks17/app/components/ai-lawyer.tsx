@@ -10,7 +10,11 @@ import StreamingAvatar, {
   StreamingEvents,
   TaskType,
 } from "@heygen/streaming-avatar"
+<<<<<<< Updated upstream
 import ReactMarkdown from 'react-markdown'
+=======
+import { json } from 'stream/consumers'
+>>>>>>> Stashed changes
 
 interface Message {
   id: number
@@ -70,8 +74,14 @@ export default function AILawyer() {
   const avatar = useRef<StreamingAvatar | null>(null)
   const [chatMode, setChatMode] = useState("text_mode")
   const [isUserTalking, setIsUserTalking] = useState(false)
+<<<<<<< Updated upstream
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [caseContent, setCaseContent] = useState('');
+=======
+
+  const [transcript, setTranscript] = useState('')
+
+>>>>>>> Stashed changes
   const CARTESIA_API_KEY = process.env.CARTESIA_API_KEY;
 
 
@@ -220,6 +230,7 @@ export default function AILawyer() {
   const toggleRecording = () => {
     if(!isRecording){
       setIsRecording(!isRecording)
+<<<<<<< Updated upstream
       fetch('http://127.0.0.1:5000/api/listen/start').then((response) => {
         console.log(response);
       })
@@ -229,7 +240,52 @@ export default function AILawyer() {
       fetch('http://127.0.0.1:5000/api/listen/stop').then((response) => {
         console.log(response);
       })
+=======
+    fetch('http://127.0.0.1:5000/api/record/start').then((response) => {
+      console.log(response);
+      // const jsonData = response.json();
+      // console.log(jsonData)
+    })
+    }
+    else{
+    setIsRecording(!isRecording)
+    fetch('http://127.0.0.1:5000/api/record/stop')
+    .then(async (response) => {
+      const jsonData = await response.json();
+      console.log(jsonData)
+      setTranscript(jsonData.transcript)
+      return jsonData; // Ensure you return the promise from response.json()
+    })
+>>>>>>> Stashed changes
     } 
+  }
+
+  const processInput = () => {
+    let payload =
+    {
+      '$key': "bb-1u4b1z6p616x6i2z394pn15624w2si2f3o963r16681m3114i4",
+      'context': [
+        {
+          'role': "user",
+          "parts": [
+            {
+            "text": transcript,
+            }
+          ]
+        }
+      ]
+    }
+
+    fetch('https://breadboard-community.wl.r.appspot.com/boards/@AdorableBeetle/prod-board-copy.bgl.api/run', 
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'  // Specify that the body is JSON
+        },      
+        body: JSON.stringify(payload),
+
+      }
+    ).then()
   }
 
   const testTts = async () => {
@@ -289,6 +345,7 @@ Remember to keep all communication and documents confidential.
       <main className="flex-grow flex relative overflow-hidden">
         {/* Video Section */}
         <div className="w-3/4 h-full flex flex-col items-center justify-center relative z-10">
+<<<<<<< Updated upstream
           <Card className="w-full h-full overflow-hidden rounded-lg shadow-2xl" style={{
             background: 'linear-gradient(45deg, #6366f1, #a855f7, #ec4899)',
             padding: '4px',
@@ -340,6 +397,51 @@ Remember to keep all communication and documents confidential.
               </div>
             </CardBody>
           </Card>
+=======
+        <Card className="w-full h-full overflow-hidden rounded-lg shadow-2xl" style={{
+  background: 'linear-gradient(45deg, #6366f1, #a855f7, #ec4899)',
+  padding: '4px', // This creates the gradient border effect
+}}>
+  <CardBody className="p-0 relative bg-white rounded-lg">
+    <video
+      ref={mediaStream}
+      autoPlay
+      playsInline
+      className="w-full h-full object-cover object-center rounded-lg"
+    >
+      <track kind="captions" />
+    </video>
+    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+      <Button
+        className="bg-purple-500 hover:bg-purple-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl mb-4"
+        size="lg"
+        onClick={startSession}
+      >
+        Start Session
+      </Button>
+      {/* <Button onClick={testTts}>Test TTS</Button> */}
+      <div className="flex gap-4">
+        <Button
+          className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
+          size="sm"
+          onClick={handleInterrupt}
+        >
+          <PauseCircle size={16} />
+          <span>Interrupt</span>
+        </Button>
+        <Button
+          className="bg-red-500 hover:bg-red-600 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
+          size="sm"
+          onClick={endSession}
+        >
+          <StopCircle size={16} />
+          <span>End Session</span>
+        </Button>
+      </div>
+    </div>
+  </CardBody>
+</Card>
+>>>>>>> Stashed changes
         </div>
 
         {/* Chat Section */}

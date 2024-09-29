@@ -10,6 +10,7 @@ import wave
 import sys
 
 import pyaudio
+import struct
 
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
@@ -21,11 +22,12 @@ CORS(app)
 
 recording = False
 
+load_dotenv()
 
 
 
 # Initialize the Groq client
-client = Groq()
+client = Groq(api_key=os.environ['GROQ_API_KEY'])
 
 app = Flask(__name__)
 CORS(app)
@@ -34,8 +36,9 @@ load_dotenv()
 
 @app.route("/api/record/start")
 def start_rec():
+    global recording
     recording = True
-    with wave.open('output.wav', 'wb') as wf:
+    with wave.open(os.path.join(os.path.dirname(__file__), 'output.wav'), 'wb') as wf:
         p = pyaudio.PyAudio()
         wf.setnchannels(CHANNELS)
         wf.setsampwidth(p.get_sample_size(FORMAT))
@@ -45,16 +48,32 @@ def start_rec():
 
         print('Recording...')
         while recording:
-            wf.writeframes(stream.read(CHUNK))
+            data = stream.read(CHUNK)
+            wf.writeframes(data)
         print('Done')
 
         stream.close()
         p.terminate()
-
+    return {}
 @app.route("/api/record/stop")
 def stop_rec():
+    global recording
     recording = False
+    filename = os.path.dirname(__file__) + "/output.wav" # Replace with your audio file!
 
+    # Open the audio file
+    with open(filename, "rb") as file:
+        # Create a transcription of the audio file
+        transcription = client.audio.transcriptions.create(
+            file=(filename, file.read()), # Required audio file
+            model="distil-whisper-large-v3-en", # Required model to use for transcription
+            prompt="Specify context or spelling",  # Optional
+            response_format="json",  # Optional
+            language="en",  # Optional
+            temperature=0.0  # Optional
+        )
+        # Print the transcription text
+    return jsonify({"transcript": transcription.text})
 
 # # Specify the path to the audio file
 # filename = os.path.dirname(__file__) + "/sample_audio.m4a" # Replace with your audio file!
