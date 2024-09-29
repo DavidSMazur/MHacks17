@@ -176,13 +176,13 @@ export default function AILawyer() {
   const toggleRecording = () => {
     if(!isRecording){
       setIsRecording(!isRecording)
-    fetch('http://127.0.0.1/api/listen/start').then((response) => {
+    fetch('http://127.0.0.1:5000/api/listen/start').then((response) => {
       console.log(response);
     })
     }
     else{
     setIsRecording(!isRecording)
-    fetch('http://127.0.0.1/api/listen/stop').then((response) => {
+    fetch('http://127.0.0.1:5000/api/listen/stop').then((response) => {
       console.log(response);
     })
     } 

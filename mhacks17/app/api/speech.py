@@ -25,6 +25,7 @@ load_dotenv()
 deepgram_api_key = os.getenv('DEEPGRAM_API_KEY')
 
 is_finals = []
+final_transcript = ""
 stop_streaming = False
 transcription_queue = asyncio.Queue()
 
@@ -33,7 +34,7 @@ async def stop_stream():
     stop_streaming = True
 
 async def STT():
-    global is_finals, stop_streaming
+    global is_finals, stop_streaming, final_transcript
     try:
         loop = asyncio.get_running_loop()
 
@@ -54,6 +55,7 @@ async def STT():
                 is_finals.append(sentence)
                 if result.speech_final:
                     utterance = " ".join(is_finals)
+                    final_transcript = " ".join(is_finals)
                     print(f"Speech Final: {utterance}")
                     await transcription_queue.put(utterance)
                     is_finals = []
@@ -121,16 +123,35 @@ async def listenRunner():
     async for transcription in STT():
             print(f"Main received: {transcription}")
             # # Process the transcription as needed
-            if "stop" in transcription.lower():
-                await stop_stream()
+            # if "stop" in transcription.lower():
+            #     await stop_stream()
+        
+# def listenRunnerRunner():
+#     text = listenRunner()
+#     return text
 
 @app.route('/api/listen/start', methods=['GET'])
 def listen():
-    asyncio.run(listenRunner)
+    global stop_streaming
+    stop_streaming = False
+    asyncio.create_task(listenRunner())
+    return jsonify({'message': 'Listening started'})
+
+# @app.route('/api/listen/start', methods=['GET'])
+# def listen():
+#     # loop = asyncio.new_event_loop()  # Create a new event loop
+#     # asyncio.set_event_loop(loop)  # Set it as the current event loop
+#     # text = loop.run_until_complete(listenRunner())  # Run the coroutine until complete
+#     # return jsonify({"transcription": text})  # Return as JSON response
+
 
 @app.route('/api/listen/stop', methods=['GET'])
 def listen_stop():
-    asyncio.run(stop_stream)
+    global stop_streaming, final_transcript
+    stop_streaming = True
+    response = {'final_transcript': final_transcript}
+    final_transcript = ""
+    return jsonify(response)
     
 @app.route('/api/talk', methods=['POST'])
 def TTS():
