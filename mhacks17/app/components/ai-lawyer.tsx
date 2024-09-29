@@ -1,20 +1,17 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Upload, Mic, PauseCircle, StopCircle, X } from "lucide-react"
+import { Upload, Mic, PauseCircle, StopCircle, X, Download } from "lucide-react"
 import { Card, CardBody, Button } from "@nextui-org/react"
 import type { StartAvatarResponse } from "@heygen/streaming-avatar"
-import { useTTS } from '@cartesia/cartesia-js/react';
 import StreamingAvatar, {
   AvatarQuality,
   StreamingEvents,
   TaskType,
 } from "@heygen/streaming-avatar"
-<<<<<<< Updated upstream
 import ReactMarkdown from 'react-markdown'
-=======
+import { usePDF } from 'react-to-pdf';
 import { json } from 'stream/consumers'
->>>>>>> Stashed changes
 
 interface Message {
   id: number
@@ -29,31 +26,43 @@ interface CasePopupProps {
 }
 
 const CasePopup: React.FC<CasePopupProps> = ({ isOpen, onClose, content }) => {
+  const { toPDF, targetRef } = usePDF({filename: 'case_summary.pdf'});
+
   return (
     <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <div className={`bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-auto transform transition-transform duration-300 ${isOpen ? 'scale-100' : 'scale-95'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-indigo-600">Case Summary</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
-          >
-            <X size={24} />
-          </button>
+          <div className="flex items-center space-x-2">
+            <Button
+              className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-2 transition-colors duration-300"
+              size="sm"
+              onClick={() => toPDF()}
+              aria-label="Download PDF"
+            >
+              <Download size={20} />
+            </Button>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+            >
+              <X size={24} />
+            </button>
+          </div>
         </div>
-        <div className="p-6">
+        <div className="p-6" ref={targetRef}>
           <ReactMarkdown
             components={{
               h1: ({ node, ...props }) => <h1 className="text-3xl font-bold mb-4 text-indigo-800" {...props} />,
               h2: ({ node, ...props }) => <h2 className="text-2xl font-semibold mb-3 text-indigo-700" {...props} />,
               h3: ({ node, ...props }) => <h3 className="text-xl font-semibold mb-2 text-indigo-600" {...props} />,
-              p: ({ node, ...props }) => <p className="mb-4 text-gray-700" {...props} />,
-              ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4" {...props} />,
-              ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4" {...props} />,
-              li: ({ node, ...props }) => <li className="mb-2" {...props} />,
+              p: ({ node, ...props }) => <p className="mb-4 text-black" {...props} />,
+              ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 text-black" {...props} />,
+              ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 text-black" {...props} />,
+              li: ({ node, ...props }) => <li className="mb-2 text-black" {...props} />,
               a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" {...props} />,
               blockquote: ({ node, ...props }) => (
-                <blockquote className="border-l-4 border-indigo-500 pl-4 italic my-4" {...props} />
+                <blockquote className="border-l-4 border-indigo-500 pl-4 italic my-4 text-black" {...props} />
               ),
             }}
           >
@@ -74,14 +83,11 @@ export default function AILawyer() {
   const avatar = useRef<StreamingAvatar | null>(null)
   const [chatMode, setChatMode] = useState("text_mode")
   const [isUserTalking, setIsUserTalking] = useState(false)
-<<<<<<< Updated upstream
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [caseContent, setCaseContent] = useState('');
-=======
 
   const [transcript, setTranscript] = useState('')
 
->>>>>>> Stashed changes
   const CARTESIA_API_KEY = process.env.CARTESIA_API_KEY;
 
 
@@ -230,17 +236,6 @@ export default function AILawyer() {
   const toggleRecording = () => {
     if(!isRecording){
       setIsRecording(!isRecording)
-<<<<<<< Updated upstream
-      fetch('http://127.0.0.1:5000/api/listen/start').then((response) => {
-        console.log(response);
-      })
-    }
-    else{
-      setIsRecording(!isRecording)
-      fetch('http://127.0.0.1:5000/api/listen/stop').then((response) => {
-        console.log(response);
-      })
-=======
     fetch('http://127.0.0.1:5000/api/record/start').then((response) => {
       console.log(response);
       // const jsonData = response.json();
@@ -256,7 +251,6 @@ export default function AILawyer() {
       setTranscript(jsonData.transcript)
       return jsonData; // Ensure you return the promise from response.json()
     })
->>>>>>> Stashed changes
     } 
   }
 
@@ -296,8 +290,6 @@ export default function AILawyer() {
 
   const handleOpenPopup = async () => {
     const placeholderContent = `
-## Case Summary
-
 ### Client Information
 - **Name**: John Doe
 - **Age**: 35
@@ -341,16 +333,15 @@ Remember to keep all communication and documents confidential.
           </div>
         </div>
       </nav>
-
+  
       <main className="flex-grow flex relative overflow-hidden">
         {/* Video Section */}
         <div className="w-3/4 h-full flex flex-col items-center justify-center relative z-10">
-<<<<<<< Updated upstream
           <Card className="w-full h-full overflow-hidden rounded-lg shadow-2xl" style={{
             background: 'linear-gradient(45deg, #6366f1, #a855f7, #ec4899)',
-            padding: '4px',
+            padding: '1px', // Reduced padding to minimize the gradient border
           }}>
-            <CardBody className="p-0 relative bg-white rounded-lg">
+            <CardBody className="p-0 relative bg-white rounded-lg h-full"> {/* Added h-full to ensure full height */}
               <video
                 ref={mediaStream}
                 autoPlay
@@ -367,8 +358,7 @@ Remember to keep all communication and documents confidential.
                 >
                   Start Session
                 </Button>
-                <Button onClick={testTts}>Test TTS</Button>
-                <div className="flex gap-4">
+                <div className="flex gap-4 mb-4">
                   <Button
                     className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
                     size="sm"
@@ -386,9 +376,10 @@ Remember to keep all communication and documents confidential.
                     <span>End Session</span>
                   </Button>
                 </div>
-                {/* Test button for CasePopup */}
+              </div>
+              <div className="absolute bottom-4 right-4">
                 <Button
-                  className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl mt-4"
+                  className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl"
                   size="lg"
                   onClick={handleOpenPopup}
                 >
@@ -397,53 +388,8 @@ Remember to keep all communication and documents confidential.
               </div>
             </CardBody>
           </Card>
-=======
-        <Card className="w-full h-full overflow-hidden rounded-lg shadow-2xl" style={{
-  background: 'linear-gradient(45deg, #6366f1, #a855f7, #ec4899)',
-  padding: '4px', // This creates the gradient border effect
-}}>
-  <CardBody className="p-0 relative bg-white rounded-lg">
-    <video
-      ref={mediaStream}
-      autoPlay
-      playsInline
-      className="w-full h-full object-cover object-center rounded-lg"
-    >
-      <track kind="captions" />
-    </video>
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
-      <Button
-        className="bg-purple-500 hover:bg-purple-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl mb-4"
-        size="lg"
-        onClick={startSession}
-      >
-        Start Session
-      </Button>
-      {/* <Button onClick={testTts}>Test TTS</Button> */}
-      <div className="flex gap-4">
-        <Button
-          className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
-          size="sm"
-          onClick={handleInterrupt}
-        >
-          <PauseCircle size={16} />
-          <span>Interrupt</span>
-        </Button>
-        <Button
-          className="bg-red-500 hover:bg-red-600 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
-          size="sm"
-          onClick={endSession}
-        >
-          <StopCircle size={16} />
-          <span>End Session</span>
-        </Button>
-      </div>
-    </div>
-  </CardBody>
-</Card>
->>>>>>> Stashed changes
         </div>
-
+  
         {/* Chat Section */}
         <div className="w-1/4 flex flex-col overflow-hidden border-l border-indigo-200">
           <div className="flex-grow overflow-y-auto space-y-2 p-2 pt-4">
@@ -466,7 +412,7 @@ Remember to keep all communication and documents confidential.
           </div>
         </div>
       </main>
-
+  
       {/* Message Input Section */}
       <div className="p-6 bg-white bg-opacity-50 backdrop-blur-md">
         <form onSubmit={handleSendMessage} className="flex items-center justify-center max-w-4xl mx-auto">
@@ -510,7 +456,7 @@ Remember to keep all communication and documents confidential.
           </button>
         </form>
       </div>
-
+  
       {/* CasePopup component */}
       <CasePopup
         isOpen={isPopupOpen}
