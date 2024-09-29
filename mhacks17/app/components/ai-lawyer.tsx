@@ -86,6 +86,10 @@ export default function AILawyer() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [caseContent, setCaseContent] = useState('');
 
+  const [transcript, setTranscript] = useState('')
+  const [currOut, setcurrOut] = useState('')
+  const [contextList, setcontextList] = useState([''])
+
   const CARTESIA_API_KEY = process.env.CARTESIA_API_KEY;
 
 
@@ -258,8 +262,33 @@ export default function AILawyer() {
         },      
         body: JSON.stringify(payload),
       }
-    ).then()
+    ).then(async (response) => {
+      console.log(response);
+      const jsonData = await response.json();
+      setcurrOut(jsonData.outputs)
+      if(avatar.current){
+        avatar.current.speak({text: jsonData.outputs, task_type: TaskType.REPEAT});
+      }
+    })
   }
+
+  useEffect(() =>{
+    fetch('http://127.0.0.1:5000/api/getBreadboard', 
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'  // Specify that the body is JSON
+        },      
+        body: transcript,
+      })
+      .then(async (response) => {
+        const jsonData = await response.json()
+        setcurrOut(jsonData['text'])
+      })
+      if(avatar.current){
+        avatar.current.speak({text: currOut, task_type: TaskType.REPEAT});
+      }
+  }, [transcript])
 
   const testTts = async () => {
     if(avatar.current){
