@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@cartesia/cartesia-js": "^1.0.3",
     "@headlessui/react": "^2.1.8",
     "@heroicons/react": "^2.1.5",
     "@heygen/streaming-avatar": "^2.0.4",

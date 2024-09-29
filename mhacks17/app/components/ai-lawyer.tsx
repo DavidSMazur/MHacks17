@@ -4,9 +4,11 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Upload, Mic, PauseCircle, StopCircle } from "lucide-react"
 import { Card, CardBody, Button } from "@nextui-org/react"
 import type { StartAvatarResponse } from "@heygen/streaming-avatar"
+import { useTTS } from '@cartesia/cartesia-js/react';
 import StreamingAvatar, {
   AvatarQuality,
   StreamingEvents,
+  TaskType,
 } from "@heygen/streaming-avatar"
 
 interface Message {
@@ -20,11 +22,39 @@ export default function AILawyer() {
   const [stream, setStream] = useState<MediaStream>()
   const [debug, setDebug] = useState<string>()
   const [data, setData] = useState<StartAvatarResponse>()
-  const [text, setText] = useState<string>("")
   const mediaStream = useRef<HTMLVideoElement>(null)
   const avatar = useRef<StreamingAvatar | null>(null)
   const [chatMode, setChatMode] = useState("text_mode")
   const [isUserTalking, setIsUserTalking] = useState(false)
+
+  const CARTESIA_API_KEY = process.env.CARTESIA_API_KEY;
+
+
+  // const tts = useTTS({
+	// 	apiKey: CARTESIA_API_KEY != null ? CARTESIA_API_KEY : "",
+	// 	sampleRate: 44100,
+	// })
+  // console.log(CARTESIA_API_KEY)
+
+	// const [text, setText] = useState("");
+
+	// const handleBuffer = async (input_text: string) => {
+	// 	// Begin buffering the audio.
+	// 	const response = await tts.buffer({
+	// 		model_id: "sonic-english",
+	// 		voice: {
+  //       		mode: "id",
+  //       		id: "a0e99841-438c-4a64-b679-ae501e7d6091",
+  //       	},
+	// 		transcript: input_text,
+	// 	});
+
+  //   console.log(response)
+
+  //   await tts.play()
+
+		// Immediately play the audio. (You can also buffer in advance and play later.)
+	// }
 
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, text: "Hello! I'm your AI lawyer. How can I help you today?", sender: 'ai' }
@@ -43,17 +73,17 @@ export default function AILawyer() {
     } catch (error) {
       console.error("Error fetching access token:", error)
     }
-    return ""
+    
   }
 
   async function startSession() {
     setIsLoadingSession(true)
     const newToken = await fetchAccessToken()
-
     avatar.current = new StreamingAvatar({
+      //@ts-ignore
       token: newToken,
     })
-    avatar.current.on(StreamingEvents.AVATAR_START_TALKING, (e) => {
+    avatar.current.on(StreamingEvents.AVATAR_START_TALKING, async (e) => {
       console.log("Avatar started talking", e)
     })
     avatar.current.on(StreamingEvents.AVATAR_STOP_TALKING, (e) => {
@@ -82,8 +112,8 @@ export default function AILawyer() {
       })
 
       setData(res)
-      await avatar.current?.startVoiceChat()
-      setChatMode("voice_mode")
+      // await avatar.current?.startVoiceChat()
+      // setChatMode("voice_mode")
     } catch (error) {
       console.error("Error starting avatar session:", error)
     } finally {
@@ -117,6 +147,7 @@ export default function AILawyer() {
   useEffect(() => {
     if (stream && mediaStream.current) {
       mediaStream.current.srcObject = stream
+      // mediaStream.current.muted = true;
       mediaStream.current.onloadedmetadata = () => {
         mediaStream.current!.play()
         setDebug("Playing")
@@ -143,7 +174,27 @@ export default function AILawyer() {
   }
 
   const toggleRecording = () => {
+    if(!isRecording){
+      setIsRecording(!isRecording)
+    fetch('http://127.0.0.1/api/listen/start').then((response) => {
+      console.log(response);
+    })
+    }
+    else{
     setIsRecording(!isRecording)
+    fetch('http://127.0.0.1/api/listen/stop').then((response) => {
+      console.log(response);
+    })
+    } 
+  }
+
+  const testTts = async () => {
+    // await handleBuffer("Hi, how are you?")
+    if(avatar.current){
+      avatar.current.speak({text: "Hi, how are you? I am your AI lawyer, and I can help answer your legal questions!", task_type: TaskType.REPEAT});
+    }
+    
+    
   }
 
   return (
@@ -183,6 +234,7 @@ export default function AILawyer() {
       >
         Start Session
       </Button>
+      <Button onClick={testTts}>Test TTS</Button>
       <div className="flex gap-4">
         <Button
           className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"

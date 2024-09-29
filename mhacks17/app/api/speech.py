@@ -2,7 +2,7 @@ import os
 import asyncio
 
 from flask_cors import CORS
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from dotenv import load_dotenv
 from signal import SIGINT, SIGTERM
 from dotenv import load_dotenv
@@ -20,7 +20,7 @@ import pyaudio
 app = Flask(__name__)
 CORS(app)
 
-load_dotenv('.env')
+load_dotenv()
 
 deepgram_api_key = os.getenv('DEEPGRAM_API_KEY')
 
@@ -121,8 +121,8 @@ async def listenRunner():
     async for transcription in STT():
             print(f"Main received: {transcription}")
             # # Process the transcription as needed
-            # if "stop" in transcription.lower():
-            #     await stop_stream()
+            if "stop" in transcription.lower():
+                await stop_stream()
 
 @app.route('/api/listen/start', methods=['GET'])
 def listen():
@@ -132,13 +132,14 @@ def listen():
 def listen_stop():
     asyncio.run(stop_stream)
     
-@app.route('/api/talk')
-def TTS(transcript):
+@app.route('/api/talk', methods=['POST'])
+def TTS():
+    data = request.get_json()
+    print(data['transcript'])
     client = Cartesia(api_key=os.environ.get("CARTESIA_API_KEY"))
     voice_name = "Australian Narrator Lady"
     voice_id = "8985388c-1332-4ce7-8d55-789628aa3df4"
     voice = client.voices.get(id=voice_id)
-
     if voice is None:
         print(f"Voice with ID {voice_id} not found.")
         exit(1) 
@@ -151,6 +152,10 @@ def TTS(transcript):
         "encoding": "pcm_f32le",
         "sample_rate": 22050,
     }
+    audio_data = bytearray()
+    
+    
+    
 
     p = pyaudio.PyAudio()
     rate = 22050
@@ -163,7 +168,7 @@ def TTS(transcript):
     # Generate and stream audio using the websocket
     for output in ws.send(
         model_id=model_id,
-        transcript=transcript,
+        transcript=data['transcript'],
         voice_embedding=voice["embedding"],
         stream=True,
         output_format=output_format,
@@ -175,11 +180,17 @@ def TTS(transcript):
 
         # Write the audio data to the stream
         stream.write(buffer)
+        audio_data.extend(buffer)  # Append buffer to audio_data
 
     stream.stop_stream()
     stream.close()
     p.terminate()
 
     ws.close()  # Close the websocket connection
+    return Response(audio_data, mimetype='audio/wav')
+    
+    
+if __name__ == '__main__':
+    app.run(port=5000)
     
 
