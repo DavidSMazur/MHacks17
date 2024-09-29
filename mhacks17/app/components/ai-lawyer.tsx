@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Upload, Mic, PauseCircle, StopCircle } from "lucide-react"
+import { Upload, Mic, PauseCircle, StopCircle, X } from "lucide-react"
 import { Card, CardBody, Button } from "@nextui-org/react"
 import type { StartAvatarResponse } from "@heygen/streaming-avatar"
 import { useTTS } from '@cartesia/cartesia-js/react';
@@ -10,12 +10,56 @@ import StreamingAvatar, {
   StreamingEvents,
   TaskType,
 } from "@heygen/streaming-avatar"
+import ReactMarkdown from 'react-markdown'
 
 interface Message {
   id: number
   text: string
   sender: 'ai' | 'user'
 }
+
+interface CasePopupProps {
+  isOpen: boolean;
+  onClose: () => void;
+  content: string;
+}
+
+const CasePopup: React.FC<CasePopupProps> = ({ isOpen, onClose, content }) => {
+  return (
+    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div className={`bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-auto transform transition-transform duration-300 ${isOpen ? 'scale-100' : 'scale-95'}`}>
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-indigo-600">Case Summary</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        <div className="p-6">
+          <ReactMarkdown
+            components={{
+              h1: ({ node, ...props }) => <h1 className="text-3xl font-bold mb-4 text-indigo-800" {...props} />,
+              h2: ({ node, ...props }) => <h2 className="text-2xl font-semibold mb-3 text-indigo-700" {...props} />,
+              h3: ({ node, ...props }) => <h3 className="text-xl font-semibold mb-2 text-indigo-600" {...props} />,
+              p: ({ node, ...props }) => <p className="mb-4 text-gray-700" {...props} />,
+              ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4" {...props} />,
+              ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4" {...props} />,
+              li: ({ node, ...props }) => <li className="mb-2" {...props} />,
+              a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" {...props} />,
+              blockquote: ({ node, ...props }) => (
+                <blockquote className="border-l-4 border-indigo-500 pl-4 italic my-4" {...props} />
+              ),
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function AILawyer() {
   const [isLoadingSession, setIsLoadingSession] = useState(false)
@@ -26,7 +70,8 @@ export default function AILawyer() {
   const avatar = useRef<StreamingAvatar | null>(null)
   const [chatMode, setChatMode] = useState("text_mode")
   const [isUserTalking, setIsUserTalking] = useState(false)
-
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [caseContent, setCaseContent] = useState('');
   const CARTESIA_API_KEY = process.env.CARTESIA_API_KEY;
 
 
@@ -73,7 +118,6 @@ export default function AILawyer() {
     } catch (error) {
       console.error("Error fetching access token:", error)
     }
-    
   }
 
   async function startSession() {
@@ -176,26 +220,58 @@ export default function AILawyer() {
   const toggleRecording = () => {
     if(!isRecording){
       setIsRecording(!isRecording)
-    fetch('http://127.0.0.1:5000/api/listen/start').then((response) => {
-      console.log(response);
-    })
+      fetch('http://127.0.0.1:5000/api/listen/start').then((response) => {
+        console.log(response);
+      })
     }
     else{
-    setIsRecording(!isRecording)
-    fetch('http://127.0.0.1:5000/api/listen/stop').then((response) => {
-      console.log(response);
-    })
+      setIsRecording(!isRecording)
+      fetch('http://127.0.0.1:5000/api/listen/stop').then((response) => {
+        console.log(response);
+      })
     } 
   }
 
   const testTts = async () => {
-    // await handleBuffer("Hi, how are you?")
     if(avatar.current){
       avatar.current.speak({text: "Hi, how are you? I am your AI lawyer, and I can help answer your legal questions!", task_type: TaskType.REPEAT});
     }
-    
-    
   }
+
+  const handleOpenPopup = async () => {
+    const placeholderContent = `
+## Case Summary
+
+### Client Information
+- **Name**: John Doe
+- **Age**: 35
+- **Occupation**: Software Engineer
+
+### Legal Issue
+The client is facing a dispute with their employer regarding overtime pay and workplace discrimination.
+
+### Key Points
+1. Client has been working for the company for 5 years
+2. Regularly works more than 40 hours per week without overtime compensation
+3. Recently passed over for promotion, believes it's due to age discrimination
+
+### Recommended Actions
+1. Review employment contract and company policies
+2. Gather documentation of hours worked and any communication regarding overtime
+3. Collect evidence supporting the discrimination claim
+4. Consider filing a complaint with the Equal Employment Opportunity Commission (EEOC)
+
+### Next Steps
+- Schedule a follow-up meeting to discuss gathered evidence
+- Prepare for potential negotiation with the employer
+- Explore options for alternative dispute resolution
+
+Remember to keep all communication and documents confidential.
+    `;
+    
+    setCaseContent(placeholderContent);
+    setIsPopupOpen(true);
+  };
 
   return (
     <div className="h-screen w-screen bg-gradient-to-br from-purple-100 to-indigo-200 flex flex-col">
@@ -213,49 +289,57 @@ export default function AILawyer() {
       <main className="flex-grow flex relative overflow-hidden">
         {/* Video Section */}
         <div className="w-3/4 h-full flex flex-col items-center justify-center relative z-10">
-        <Card className="w-full h-full overflow-hidden rounded-lg shadow-2xl" style={{
-  background: 'linear-gradient(45deg, #6366f1, #a855f7, #ec4899)',
-  padding: '4px', // This creates the gradient border effect
-}}>
-  <CardBody className="p-0 relative bg-white rounded-lg">
-    <video
-      ref={mediaStream}
-      autoPlay
-      playsInline
-      className="w-full h-full object-cover object-center rounded-lg"
-    >
-      <track kind="captions" />
-    </video>
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
-      <Button
-        className="bg-purple-500 hover:bg-purple-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl mb-4"
-        size="lg"
-        onClick={startSession}
-      >
-        Start Session
-      </Button>
-      <Button onClick={testTts}>Test TTS</Button>
-      <div className="flex gap-4">
-        <Button
-          className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
-          size="sm"
-          onClick={handleInterrupt}
-        >
-          <PauseCircle size={16} />
-          <span>Interrupt</span>
-        </Button>
-        <Button
-          className="bg-red-500 hover:bg-red-600 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
-          size="sm"
-          onClick={endSession}
-        >
-          <StopCircle size={16} />
-          <span>End Session</span>
-        </Button>
-      </div>
-    </div>
-  </CardBody>
-</Card>
+          <Card className="w-full h-full overflow-hidden rounded-lg shadow-2xl" style={{
+            background: 'linear-gradient(45deg, #6366f1, #a855f7, #ec4899)',
+            padding: '4px',
+          }}>
+            <CardBody className="p-0 relative bg-white rounded-lg">
+              <video
+                ref={mediaStream}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover object-center rounded-lg"
+              >
+                <track kind="captions" />
+              </video>
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+                <Button
+                  className="bg-purple-500 hover:bg-purple-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl mb-4"
+                  size="lg"
+                  onClick={startSession}
+                >
+                  Start Session
+                </Button>
+                <Button onClick={testTts}>Test TTS</Button>
+                <div className="flex gap-4">
+                  <Button
+                    className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
+                    size="sm"
+                    onClick={handleInterrupt}
+                  >
+                    <PauseCircle size={16} />
+                    <span>Interrupt</span>
+                  </Button>
+                  <Button
+                    className="bg-red-500 hover:bg-red-600 text-white rounded-full px-6 py-2 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
+                    size="sm"
+                    onClick={endSession}
+                  >
+                    <StopCircle size={16} />
+                    <span>End Session</span>
+                  </Button>
+                </div>
+                {/* Test button for CasePopup */}
+                <Button
+                  className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full px-8 py-3 transition-colors duration-300 text-lg font-semibold shadow-lg hover:shadow-xl mt-4"
+                  size="lg"
+                  onClick={handleOpenPopup}
+                >
+                  View Case Summary
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
         </div>
 
         {/* Chat Section */}
@@ -324,6 +408,13 @@ export default function AILawyer() {
           </button>
         </form>
       </div>
+
+      {/* CasePopup component */}
+      <CasePopup
+        isOpen={isPopupOpen}
+        onClose={() => setIsPopupOpen(false)}
+        content={caseContent}
+      />
     </div>
   )
 }
